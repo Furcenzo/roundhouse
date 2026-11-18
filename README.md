@@ -22,6 +22,15 @@ client – it starts the tools you already have:
   window or the panel is open).
 - Starts at login if you want, and stays out of the Dock and the menu bar unless you turn the Dock icon on.
 
+### Known limitation: RDP confirmation in Windows App
+
+Windows App asks "Connect to …? Only continue if you trust the source of this remote PC connection" every time
+Roundhouse opens an RDP connection, with switches for sharing printers, smart cards and the clipboard. It is
+Microsoft's protection against malicious `.rdp` files and applies to every connection started from outside the app
+(`.rdp` files and `rdp://` links alike); PCs saved in Windows App itself don't show it. Windows App 11.4 offers no
+setting to turn it off and no way to start a saved PC from another app, so Roundhouse leaves the prompt in place –
+check the name and click **Connect**.
+
 Your connection list stays on your Mac (`~/Library/Application Support/Roundhouse/connections.json`).
 
 Available in English and Slovak (follows the macOS language setting).
