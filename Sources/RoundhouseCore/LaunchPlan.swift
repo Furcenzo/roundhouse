@@ -71,10 +71,11 @@ public enum LaunchPlan: Equatable, Sendable {
         case .rdp:
             return .rdpFile(contents: rdpContents(host: host, user: user, port: port), app: client)
         case .winbox:
-            // WinBox 4 connects only when it gets all three of <address> <user> <password>; with fewer it just
-            // opens its login window. The password is always empty here: secrets never go on the command line.
+            // WinBox 4 connects at once only when it gets all three of <address> <user> <password>. With the address
+            // alone it opens its login window for that address and keeps the login saved in WinBox. So the empty
+            // password goes only with a user entered in Roundhouse (secrets never go on the command line).
             let address = port.map { "\(bracketed(host)):\($0)" } ?? host
-            return .launchApp(client ?? KnownClient.winBox, arguments: [address, user ?? "admin", ""])
+            return .launchApp(client ?? KnownClient.winBox, arguments: user.map { [address, $0, ""] } ?? [address])
         case .web:
             fatalError("handled above")
         }
