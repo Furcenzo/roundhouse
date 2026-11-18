@@ -21,13 +21,30 @@ final class AppModel {
     private let sshConfigURL: URL
     /// The file could not be read: nothing is saved over it, so the user's data is not lost.
     private(set) var loadError: String?
+    /// Sample data for screenshots (`--args -demo <folder>`): read-only, made-up reachability dots.
+    let isDemo: Bool
 
-    init(
-        store: LibraryStore = LibraryStore(fileURL: LibraryStore.defaultURL(folder: AppModel.dataFolder)),
-        sshConfigURL: URL = AppModel.sshConfigURL
-    ) {
+    /// `--args -demo <folder>`: `connections.json` and `ssh_config` of that folder instead of the user's own
+    /// (the README screenshots use `Assets/screenshots/sample`). Nothing is saved.
+    nonisolated static var demoFolder: URL? {
+        guard let path = UserDefaults.standard.string(forKey: "demo"), !path.isEmpty else { return nil }
+        return URL(filePath: (path as NSString).expandingTildeInPath)
+    }
+
+    convenience init() {
+        if let demo = Self.demoFolder {
+            self.init(store: LibraryStore(fileURL: demo.appending(path: "connections.json")),
+                      sshConfigURL: demo.appending(path: "ssh_config"), isDemo: true)
+        } else {
+            self.init(store: LibraryStore(fileURL: LibraryStore.defaultURL(folder: Self.dataFolder)),
+                      sshConfigURL: URL.homeDirectory.appending(path: ".ssh/config"), isDemo: false)
+        }
+    }
+
+    init(store: LibraryStore, sshConfigURL: URL, isDemo: Bool) {
         self.store = store
         self.sshConfigURL = sshConfigURL
+        self.isDemo = isDemo
         do {
             library = try store.load()
         } catch {
@@ -37,18 +54,8 @@ final class AppModel {
     }
 
     /// Development builds keep their own list, so trying things out never touches the real one.
-    /// `--args -dataFolder <name>` picks another folder (screenshots with sample data).
     nonisolated static var dataFolder: String {
-        if let folder = UserDefaults.standard.string(forKey: "dataFolder"), !folder.isEmpty { return folder }
-        return (Bundle.main.bundleIdentifier ?? "").hasSuffix(".dev") ? "Roundhouse Dev" : "Roundhouse"
-    }
-
-    /// `~/.ssh/config`; `--args -sshConfigPath <file>` reads another file (screenshots with sample data).
-    nonisolated static var sshConfigURL: URL {
-        if let path = UserDefaults.standard.string(forKey: "sshConfigPath"), !path.isEmpty {
-            return URL(filePath: (path as NSString).expandingTildeInPath)
-        }
-        return URL.homeDirectory.appending(path: ".ssh/config")
+        (Bundle.main.bundleIdentifier ?? "").hasSuffix(".dev") ? "Roundhouse Dev" : "Roundhouse"
     }
 
     var dataFileURL: URL { store.fileURL }
@@ -117,7 +124,7 @@ final class AppModel {
     }
 
     private func save() {
-        guard loadError == nil else { return }
+        guard loadError == nil, !isDemo else { return }
         do {
             try store.save(library)
         } catch {
@@ -161,6 +168,14 @@ final class AppModel {
 
     /// Checks every entry, at most 4 connections at a time; entries sharing host and port are checked once.
     private func checkAll() async {
+        if isDemo {
+            // Sample addresses don't exist: entries tagged "offline" are red, the rest green.
+            for connection in connections {
+                reachability[connection.id] = connection.proxy != nil ? .unknown
+                    : connection.tags.contains("offline") ? .unreachable : .reachable
+            }
+            return
+        }
         var targets: [String: (host: String, port: Int, ids: [UUID])] = [:]
         for connection in connections {
             guard connection.proxy == nil else {

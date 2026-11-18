@@ -71,8 +71,8 @@ final class SearchPanelController: NSObject, NSWindowDelegate {
         isVisible ? hide() : show()
     }
 
-    func show() {
-        state.query = ""
+    func show(query: String = "") {
+        state.query = query
         state.openCount += 1
         // Upper third of the screen with the mouse pointer.
         let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main

@@ -1,0 +1,16 @@
+# Sample ~/.ssh/config for the README screenshots – documentation addresses only (RFC 5737, example.com).
+Host pve-01
+    HostName 192.0.2.10
+    User root
+
+Host pve-02
+    HostName 192.0.2.11
+    User root
+
+Host nas
+    HostName nas.example.com
+    User admin
+
+Host backup
+    HostName backup.example.com
+    ProxyJump pve-01

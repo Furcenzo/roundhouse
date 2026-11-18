@@ -120,27 +120,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if NSApp.activationPolicy() != policy { NSApp.setActivationPolicy(policy) }
     }
 
-    /// `--args -snapshotFolder <dir>`: draws the windows into PNG files (checking the layout with sample data).
+    /// `--args -snapshotFolder <dir>` (with `-demo`): draws the main window, the search panel and the settings into
+    /// PNG files and quits. The views draw themselves, so no screen recording permission is needed and nothing else
+    /// of the screen (desktop, Dock, menu bar) gets into the images.
     private func saveSnapshots(to folder: URL) async {
         func save(_ window: NSWindow?, _ name: String) async {
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: .seconds(2))
             guard let view = window?.contentView?.superview ?? window?.contentView,
                   let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)
             else { return }
             view.cacheDisplay(in: view.bounds, to: rep)
             try? rep.representation(using: .png, properties: [:])?.write(to: folder.appending(path: name + ".png"))
         }
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         showMainWindow()
-        model.selection = model.connections.first.map { [$0.id] } ?? []
+        mainWindow?.setContentSize(NSSize(width: 900, height: 720))
+        let selected = UserDefaults.standard.string(forKey: "snapshotSelect")
+        model.selection = model.connections.first { $0.name == selected }.map { [$0.id] } ?? []
         await save(mainWindow, "main")
-        if let imported = model.connections.first(where: \.isImported) { model.selection = [imported.id] }
-        await save(mainWindow, "imported")
-        showSettings()
-        await save(settingsWindow, "settings")
-        settingsWindow?.close()
-        panel.show()
+        panel.show(query: UserDefaults.standard.string(forKey: "snapshotQuery") ?? "")
         await save(panel.window, "panel")
         panel.hide()
+        showSettings()
+        await save(settingsWindow, "settings")
+        NSApp.terminate(nil)
     }
 
     /// Started by macOS at login (then no window opens, the app just waits for the hotkey).

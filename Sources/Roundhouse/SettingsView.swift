@@ -45,6 +45,7 @@ struct SettingsView: View {
             } footer: {
                 Text("The shortcut opens the search panel from any app. Use ⌘, ⌥ or ⌃ with a key.")
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -70,6 +71,7 @@ struct SettingsView: View {
             } footer: {
                 Text("Without the Dock icon, open the connection list from the search panel (⌘O) or by opening Roundhouse again.")
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 

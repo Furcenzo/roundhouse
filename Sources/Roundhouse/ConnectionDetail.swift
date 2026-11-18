@@ -185,6 +185,7 @@ private struct ImportedDetail: View {
             } footer: {
                 Text("Imported from ~/.ssh/config. Change it in that file; Roundhouse connects with “ssh \(connection.name)”, so all its settings apply.")
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 

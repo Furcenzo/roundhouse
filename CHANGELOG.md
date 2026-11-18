@@ -5,5 +5,16 @@ version into the GitHub Release notes, so add a section before publishing.
 
 ## Unreleased
 
-- First version: connection list with folders and tags, import of `~/.ssh/config`, search panel on a global
-  shortcut, SSH/RDP/VNC/Web/WinBox launchers, reachability dots, start at login, optional Dock icon.
+## 0.1.0
+
+First release.
+
+- **Search panel on a global shortcut** (⌥Space, changeable in Settings): type a few letters, press ↩ to connect,
+  ⌘↩ to copy the address. Recently used connections come first.
+- **Connection list** with folders, tags and notes; SSH, RDP, VNC, Web and WinBox entries, each opened in its app
+  (Ghostty/iTerm2/Terminal, Windows App, Screen Sharing, your browser, WinBox), with an optional app per entry.
+- **Hosts from `~/.ssh/config`** (with `Include`d files) appear automatically and connect with `ssh <alias>`.
+- **Reachability dots**: green when the connection's port answers, red when not – checked only while a window or the
+  panel is open.
+- Start at login; no Dock icon unless you turn it on in Settings.
+- English and Slovak.

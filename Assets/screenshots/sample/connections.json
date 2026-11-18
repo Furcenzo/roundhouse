@@ -1,0 +1,120 @@
+{
+  "connections": [
+    {
+      "client": "com.apple.Safari",
+      "group": "Homelab",
+      "host": "192.0.2.10",
+      "id": "86A3A420-8437-59B4-BA4F-C18F230F891D",
+      "kind": "web",
+      "name": "Proxmox",
+      "notes": "Cluster node 1",
+      "source": {
+        "manual": {}
+      },
+      "tags": [
+        "pve"
+      ],
+      "url": "https://192.0.2.10:8006"
+    },
+    {
+      "group": "Homelab",
+      "host": "192.0.2.12",
+      "id": "C3AE0F54-C8AF-5C08-86CF-6F984C8143E6",
+      "kind": "web",
+      "name": "Proxmox Backup",
+      "source": {
+        "manual": {}
+      },
+      "tags": [
+        "pbs"
+      ],
+      "url": "https://192.0.2.12:8007"
+    },
+    {
+      "group": "Homelab",
+      "host": "192.0.2.30",
+      "id": "3FF98DA1-2F6C-57E9-B3D2-420F76937E87",
+      "kind": "web",
+      "name": "Home Assistant",
+      "source": {
+        "manual": {}
+      },
+      "tags": [],
+      "url": "http://192.0.2.30:8123"
+    },
+    {
+      "group": "Network",
+      "host": "192.0.2.1",
+      "id": "A7ED5427-5638-56BB-82D3-4A8F34045B94",
+      "kind": "winbox",
+      "name": "Router",
+      "source": {
+        "manual": {}
+      },
+      "tags": []
+    },
+    {
+      "group": "Network",
+      "host": "192.0.2.2",
+      "id": "F4261819-1667-5E6C-A447-27EF7FE09EA3",
+      "kind": "winbox",
+      "name": "Core switch",
+      "source": {
+        "manual": {}
+      },
+      "tags": [],
+      "user": "admin"
+    },
+    {
+      "group": "Network",
+      "host": "192.0.2.3",
+      "id": "5DDFCCD9-CAE1-5167-9ABB-B2C0854A8DC8",
+      "kind": "web",
+      "name": "Access point",
+      "source": {
+        "manual": {}
+      },
+      "tags": [
+        "offline"
+      ]
+    },
+    {
+      "group": "Office",
+      "host": "pc.example.net",
+      "id": "E6FA05F3-E7ED-5C2B-914C-5413C0E8E888",
+      "kind": "rdp",
+      "name": "Office PC",
+      "source": {
+        "manual": {}
+      },
+      "tags": [],
+      "user": "EXAMPLE\\admin"
+    },
+    {
+      "group": "Office",
+      "host": "198.51.100.20",
+      "id": "0DDBFD1B-BD64-55C7-BBFF-DF1D55061017",
+      "kind": "rdp",
+      "name": "Accounting",
+      "source": {
+        "manual": {}
+      },
+      "tags": [
+        "offline"
+      ]
+    },
+    {
+      "host": "studio.example.com",
+      "id": "E77F650F-0012-5E83-A1CB-B4F165F9BD83",
+      "kind": "vnc",
+      "name": "Studio Mac",
+      "source": {
+        "manual": {}
+      },
+      "tags": [],
+      "user": "demo"
+    }
+  ],
+  "recents": [],
+  "version": 1
+}
