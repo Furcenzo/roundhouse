@@ -2,7 +2,7 @@ Sample data for the README screenshots (documentation addresses only). Regenerat
 
 ```sh
 ./scripts/build-app.sh
-open -n build/Roundhouse.app --args -demo "$PWD/Assets/screenshots/sample" \
+open -n "build/Roundhouse Dev.app" --args -demo "$PWD/Assets/screenshots/sample" \
     -snapshotFolder "$PWD/Assets/screenshots" -snapshotSelect Proxmox -snapshotQuery pve -AppleLanguages '(en)'
 ```
 

@@ -3,7 +3,7 @@
 Native macOS app (Swift 6, SwiftUI, Swift Package Manager, macOS 15+).
 `Sources/RoundhouseCore` = pure logic, no UI (tested in `Tests/RoundhouseCoreTests`); `Sources/Roundhouse` = the app.
 
-Build: `swift build`, tests: `swift test`, app bundle: `./scripts/build-app.sh` → `build/Roundhouse.app`,
+Build: `swift build`, tests: `swift test`, app bundle: `./scripts/build-app.sh` → `build/Roundhouse Dev.app`,
 build + restart: `./scripts/run.sh [sk|en]`.
 
 ## Shared scripts (mac-app-kit)

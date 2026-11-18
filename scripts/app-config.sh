@@ -31,7 +31,11 @@ CASK="${CASK:-}"                                           # Casks/<CASK>.rb in 
 TAP_REPO="${TAP_REPO:-Furcenzo/homebrew-tap}"
 SITE_SLUG="${SITE_SLUG:-}"                                 # app name for dev.furian.sk's update-site.sh
 
-APP_BUNDLE="$APP_NAME.app"
+APP_BUNDLE="$APP_NAME.app"                                 # the real app: releases, /Applications
+# Development builds (build/, DEV_CHANNEL=1) get their own file name too, so Spotlight, Finder and LaunchServices
+# never take them for the installed app.
+DEV_APP_BUNDLE="$APP_BUNDLE"
+[[ "$DEV_CHANNEL" == "1" ]] && DEV_APP_BUNDLE="$APP_NAME Dev.app"
 LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 
 # Prints the name of the "<APP_NAME> Local Dev" certificate when it is in the keychain.

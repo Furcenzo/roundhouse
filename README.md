@@ -77,7 +77,7 @@ Requires Xcode (or the Swift 6 toolchain).
 
 ```sh
 swift build && swift test
-./scripts/build-app.sh      # build/Roundhouse.app ("Roundhouse Dev", with its own connection list)
+./scripts/build-app.sh      # "build/Roundhouse Dev.app", with its own connection list
 ./scripts/run.sh [sk|en]    # build and start it
 ```
 

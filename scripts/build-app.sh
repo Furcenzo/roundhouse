@@ -3,15 +3,17 @@
 # Copyright (C) 2026 Furcenzo
 # Part of mac-app-kit (shared scripts of the Furcenzo Mac apps): change it there and run its sync.sh, not here.
 #
-# Builds the release version and packages it as build/<APP_NAME>.app (names and IDs come from app.conf).
+# Builds the release version and packages it as an .app in build/ (names and IDs come from app.conf):
+# "<APP_NAME> Dev.app" for development builds (DEV_CHANNEL=1), "<APP_NAME>.app" otherwise.
 #   VERSION=1.2.3      version written to Info.plist (default 0.1.0)
 #   UNIVERSAL=1        build for both Apple silicon and Intel (used for public releases)
 #   SIGN_IDENTITY=…    code signing identity; default: "<APP_NAME> Local Dev" when it exists in the keychain
 #                      (see scripts/setup-dev-signing.sh), otherwise ad-hoc ("-")
-#   CHANNEL=release    the real app (BUNDLE_ID, APP_NAME) – used by release.sh and install-local.sh.
-#                      Default "dev" (when app.conf has DEV_CHANNEL=1): bundle ID BUNDLE_ID.dev, name
-#                      "<APP_NAME> Dev", so development builds never stand in for the installed app (login item,
-#                      Spotlight, LaunchServices pick an app by its bundle ID) and keep their own permissions.
+#   CHANNEL=release    the real app (BUNDLE_ID, APP_NAME, "<APP_NAME>.app") – used by release.sh and
+#                      install-local.sh. Default "dev" (when app.conf has DEV_CHANNEL=1): bundle ID BUNDLE_ID.dev,
+#                      name and file "<APP_NAME> Dev(.app)", so development builds never stand in for the installed
+#                      app (login item, Spotlight, LaunchServices pick an app by its bundle ID and file name) and
+#                      keep their own permissions.
 #   OUTPUT_DIR=…       where the .app goes (default build; releases use build/release so they don't
 #                      replace the development app the permissions belong to)
 #
@@ -37,7 +39,23 @@ fi
 swift build -c release "${ARCH_FLAGS[@]}"
 BIN="$(swift build -c release "${ARCH_FLAGS[@]}" --show-bin-path)/$EXECUTABLE"
 
-APP="${OUTPUT_DIR:-build}/$APP_BUNDLE"
+VERSION="${VERSION:-0.1.0}"
+if [[ "${CHANNEL:-dev}" == "release" || "$DEV_CHANNEL" != "1" ]]; then
+    DISPLAY_NAME="$APP_NAME"
+    BUNDLE="$APP_BUNDLE"
+else
+    BUNDLE_ID="$BUNDLE_ID.dev"
+    DISPLAY_NAME="$APP_NAME Dev"
+    BUNDLE="$DEV_APP_BUNDLE"
+    # Development builds used to be build/<APP_NAME>.app: remove that copy, it would still show up in Spotlight.
+    OLD="${OUTPUT_DIR:-build}/$APP_BUNDLE"
+    if [[ -d "$OLD" && "$OLD" != "${OUTPUT_DIR:-build}/$DEV_APP_BUNDLE" ]]; then
+        "$LSREGISTER" -u "$OLD" 2>/dev/null || true
+        rm -rf "$OLD"
+    fi
+fi
+
+APP="${OUTPUT_DIR:-build}/$BUNDLE"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp -f "$BIN" "$APP/Contents/MacOS/$EXECUTABLE"
@@ -56,13 +74,6 @@ for lproj in "$RESOURCES"/*.lproj(N); do
     LOCALIZATIONS+=("<string>$(basename "$lproj" .lproj)</string>")
 done
 
-VERSION="${VERSION:-0.1.0}"
-if [[ "${CHANNEL:-dev}" == "release" || "$DEV_CHANNEL" != "1" ]]; then
-    DISPLAY_NAME="$APP_NAME"
-else
-    BUNDLE_ID="$BUNDLE_ID.dev"
-    DISPLAY_NAME="$APP_NAME Dev"
-fi
 AGENT_KEY=""
 [[ "$AGENT_APP" == "1" ]] && AGENT_KEY="<key>LSUIElement</key><true/>"
 cat > "$APP/Contents/Info.plist" <<PLIST
