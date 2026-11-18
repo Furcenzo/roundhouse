@@ -22,6 +22,7 @@ MIN_MACOS="${MIN_MACOS:-15.0}"
 CATEGORY="${CATEGORY:-public.app-category.utilities}"
 AGENT_APP="${AGENT_APP:-0}"                                # 1 = menu bar only, no Dock icon (LSUIElement)
 DEV_CHANNEL="${DEV_CHANNEL:-1}"                            # 1 = development builds are "<APP_NAME> Dev"
+RUN_QUITS_INSTALLED="${RUN_QUITS_INSTALLED:-0}"            # 1 = run.sh also quits the installed app
 DEV_IDENTITY="${DEV_IDENTITY:-$APP_NAME Local Dev}"        # local signing certificate, see setup-dev-signing.sh
 COPYRIGHT="${COPYRIGHT:-Copyright (C) 2026 Furcenzo. GPL-3.0-or-later.}"
 INFO_PLIST_EXTRA="${INFO_PLIST_EXTRA:-}"                   # extra <key>…</key><…> lines for Info.plist

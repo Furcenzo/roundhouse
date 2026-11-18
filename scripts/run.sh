@@ -11,8 +11,14 @@ cd "$(dirname "$0")/.."
 source scripts/app-config.sh
 
 ./scripts/build-app.sh
-# Quits every running copy (the dev build and, with the same executable name, the installed app too).
-pkill -x "$EXECUTABLE" 2>/dev/null && sleep 0.5 || true
+if [[ "$RUN_QUITS_INSTALLED" == "1" ]]; then
+    # Every running copy: the dev build and, with the same executable name, the installed app too.
+    pkill -x "$EXECUTABLE" 2>/dev/null && sleep 0.5 || true
+else
+    # Only the build from build/ – the installed app keeps running next to it.
+    BUILT="$(print -r -- "$PWD/build/$APP_BUNDLE/Contents/MacOS/$EXECUTABLE" | sed 's/[][\\.*^$(){}?+|]/\\&/g')"
+    pkill -f "^$BUILT" 2>/dev/null && sleep 0.5 || true
+fi
 if [[ -n "${1:-}" ]]; then
     open -n "build/$APP_BUNDLE" --args -AppleLanguages "($1)"
 else
@@ -25,6 +31,6 @@ if [[ "$AGENT_APP" == "1" ]]; then
 else
     echo "$NAME is running."
 fi
-if [[ -d "/Applications/$APP_BUNDLE" ]]; then
+if [[ "$RUN_QUITS_INSTALLED" == "1" && -d "/Applications/$APP_BUNDLE" ]]; then
     echo "(The installed $APP_NAME was quit. Back to it: open \"/Applications/$APP_BUNDLE\")"
 fi
