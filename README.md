@@ -4,7 +4,27 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-A native macOS app. Available in English and Slovak (follows the macOS language setting).
+A connection launcher for macOS: one list of your servers and devices, a Spotlight-like search panel on a global
+shortcut (⌥Space by default), and the right app opens for each connection. Roundhouse is not a terminal or an RDP
+client – it starts the tools you already have:
+
+| Type | Opens in |
+| --- | --- |
+| SSH | Ghostty (or iTerm2, Terminal) |
+| RDP | Windows App, via a temporary `.rdp` file (address and user only, never a password) |
+| VNC | Screen Sharing |
+| Web | your browser (or a browser chosen per entry) |
+| WinBox | MikroTik WinBox |
+
+- Hosts from `~/.ssh/config` (including `Include`d files) appear automatically and connect with `ssh <alias>`, so
+  keys, ProxyJump and every other setting keep working.
+- A dot next to each entry shows whether it answers (a short TCP connection to its port, only while a Roundhouse
+  window or the panel is open).
+- Starts at login if you want, and stays out of the Dock and the menu bar unless you turn the Dock icon on.
+
+Your connection list stays on your Mac (`~/Library/Application Support/Roundhouse/connections.json`).
+
+Available in English and Slovak (follows the macOS language setting).
 
 ## Download
 

@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Furcenzo
 
 import Foundation
+import Network
 import Testing
 @testable import RoundhouseCore
 
@@ -82,5 +83,22 @@ import Testing
     @Test func invalidInputIsUnknown() async {
         #expect(await Reachability.check(host: "", port: 22) == .unknown)
         #expect(await Reachability.check(host: "127.0.0.1", port: 0) == .unknown)
+    }
+}
+
+@Suite struct ReachabilityListenerTests {
+    @Test func openPortIsReachable() async throws {
+        let listener = try NWListener(using: .tcp, on: .any)
+        listener.newConnectionHandler = { $0.cancel() }
+        let ready = AsyncStream<UInt16> { continuation in
+            listener.stateUpdateHandler = { state in
+                if case .ready = state, let port = listener.port?.rawValue { continuation.yield(port) }
+            }
+        }
+        listener.start(queue: .global())
+        defer { listener.cancel() }
+        var iterator = ready.makeAsyncIterator()
+        let port = try #require(await iterator.next())
+        #expect(await Reachability.check(host: "127.0.0.1", port: Int(port)) == .reachable)
     }
 }
