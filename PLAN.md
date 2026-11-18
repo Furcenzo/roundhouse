@@ -39,7 +39,7 @@ Core and tested.
 | RDP | Windows App | temporary `.rdp` file (address, user, screen settings) opened with the client, deleted afterwards; any app that opens `.rdp` can be chosen |
 | VNC | Screen Sharing | `vnc://user@host:port` |
 | Web | default browser | the URL; a browser can be chosen per entry |
-| WinBox | WinBox | `open -a WinBox --args <host> <user>` (exact CLI of the macOS WinBox to verify) |
+| WinBox | WinBox | `open -na WinBox --args <host[:port]> <user> ""` – WinBox 4 connects only with all three arguments; the password stays empty, user defaults to `admin` |
 | SFTP | app that handles `sftp://` | `sftp://user@host:port/` – Finder cannot open SFTP without macFUSE, so the default is Cyberduck/ForkLift/Transmit if installed |
 
 Devolutions Remote Desktop Manager is a full Royal TSX competitor, not a plain RDP client, so it is not a good

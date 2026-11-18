@@ -60,8 +60,10 @@ import Testing
         }
 
         #expect(try LaunchPlan.make(for: Connection(name: "mt", kind: .winbox, host: "192.0.2.1", user: "admin"))
-            == .launchApp(KnownClient.winBox, arguments: ["192.0.2.1", "admin"]))
+            == .launchApp(KnownClient.winBox, arguments: ["192.0.2.1", "admin", ""]))
         #expect(try LaunchPlan.make(for: Connection(name: "mt", kind: .winbox, host: "2001:db8::1", port: 8292))
-            == .launchApp(KnownClient.winBox, arguments: ["[2001:db8::1]:8292"]))
+            == .launchApp(KnownClient.winBox, arguments: ["[2001:db8::1]:8292", "admin", ""]))
+        #expect(try LaunchPlan.make(for: Connection(name: "mt", kind: .winbox, host: "192.0.2.1", user: "ops"))
+            == .launchApp(KnownClient.winBox, arguments: ["192.0.2.1", "ops", ""]))
     }
 }
