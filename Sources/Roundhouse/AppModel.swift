@@ -16,6 +16,10 @@ final class AppModel {
     var selection: Set<UUID> = []
     /// The entry just added in the main window, whose name field takes focus.
     var justAdded: UUID?
+    /// The main window shows a short introduction until the user dismisses it (first launch).
+    var showWelcome: Bool {
+        didSet { if !showWelcome { Preferences.welcomeShown = true } }
+    }
 
     private let store: LibraryStore
     private let sshConfigURL: URL
@@ -45,6 +49,8 @@ final class AppModel {
         self.store = store
         self.sshConfigURL = sshConfigURL
         self.isDemo = isDemo
+        // In the demo, `-demoWelcome YES` shows the introduction (screenshots).
+        showWelcome = isDemo ? UserDefaults.standard.bool(forKey: "demoWelcome") : !Preferences.welcomeShown
         do {
             library = try store.load()
         } catch {

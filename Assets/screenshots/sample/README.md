@@ -7,4 +7,4 @@ open -n build/Roundhouse.app --args -demo "$PWD/Assets/screenshots/sample" \
 ```
 
 `-demo` reads `connections.json` and `ssh_config` from this folder and saves nothing; entries tagged `offline`
-show a red dot, the others green.
+show a red dot, the others green. `-demoWelcome YES` shows the first-launch welcome instead of the selected entry.

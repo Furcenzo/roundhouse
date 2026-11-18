@@ -105,8 +105,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func present(_ window: NSWindow) {
         panel.hide()
         NSApp.setActivationPolicy(.regular)
+        // macOS may refuse to activate an app that has just turned from an accessory into a regular one (at launch,
+        // when it was opened again from Finder or Spotlight), and the window would stay behind the others. So the
+        // window is brought to the front even when the app is not active, and activation is tried again once the
+        // new policy has taken effect.
         window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
         NSApp.activate()
+        DispatchQueue.main.async {
+            NSApp.activate()
+            window.makeKeyAndOrderFront(nil)
+        }
     }
 
     func windowWillClose(_ notification: Notification) {

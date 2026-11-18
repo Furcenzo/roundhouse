@@ -5,6 +5,11 @@ version into the GitHub Release notes, so add a section before publishing.
 
 ## Unreleased
 
+- The connection list now always comes to the front when you open Roundhouse; before, it could stay hidden behind
+  other windows, so the first launch seemed to do nothing.
+- A short welcome on the first launch explains the ⌥Space search panel and how to get back to the list without a
+  Dock icon.
+
 ## 0.1.0
 
 First release.

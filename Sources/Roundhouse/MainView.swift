@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Furcenzo
 
+import AppKit
 import RoundhouseCore
 import SwiftUI
 
@@ -50,6 +51,7 @@ struct MainView: View {
                         Label("No connections", systemImage: "server.rack")
                     } description: {
                         Text("Add a connection with the + button. Hosts from ~/.ssh/config appear here automatically.")
+                        Text("Then press \(Preferences.hotKey.displayName) anywhere to search and connect.")
                     }
                 }
             }
@@ -74,6 +76,8 @@ struct MainView: View {
                     .id(id)
             } else if model.selection.count > 1 {
                 ContentUnavailableView("Connections selected: \(model.selection.count)", systemImage: "square.stack")
+            } else if model.showWelcome {
+                WelcomeView(model: model)
             } else {
                 ContentUnavailableView(
                     "No connection selected", systemImage: "network",
@@ -127,6 +131,43 @@ struct MainView: View {
             return lhs.localizedStandardCompare(rhs) == .orderedAscending
         }
         return titles.map { (title: $0.isEmpty ? nil : $0, connections: grouped[$0] ?? []) }
+    }
+}
+
+/// Shown on the first launch: how to reach Roundhouse, which has no Dock icon.
+private struct WelcomeView: View {
+    let model: AppModel
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 96, height: 96)
+            Text("Welcome to Roundhouse")
+                .font(.title.weight(.semibold))
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Press \(Preferences.hotKey.displayName) in any app to search your connections and connect.",
+                      systemImage: "magnifyingglass")
+                Label("Roundhouse has no Dock icon: open it again, or press ⌘O in the search panel, to come back to this list.",
+                      systemImage: "dock.rectangle")
+                Label("Hosts from ~/.ssh/config appear automatically.", systemImage: "terminal")
+            }
+            .frame(maxWidth: 420, alignment: .leading)
+            HStack {
+                Button("Settings…") {
+                    NSApp.sendAction(#selector(AppDelegate.showSettings), to: nil, from: nil)
+                }
+                Button("Add Connection") {
+                    model.showWelcome = false
+                    model.addNew(kind: .ssh)
+                }
+                Button("Got It") { model.showWelcome = false }
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding(.top, 6)
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

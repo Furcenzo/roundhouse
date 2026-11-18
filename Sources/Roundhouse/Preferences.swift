@@ -16,6 +16,12 @@ enum Preferences {
         set { defaults.set(newValue, forKey: "showInDock") }
     }
 
+    /// The introduction in the main window was dismissed.
+    static var welcomeShown: Bool {
+        get { defaults.bool(forKey: "welcomeShown") }
+        set { defaults.set(newValue, forKey: "welcomeShown") }
+    }
+
     /// Terminal for SSH entries that don't choose their own.
     static var sshTerminal: String {
         get { defaults.string(forKey: "sshTerminal") ?? KnownClient.ghostty }
