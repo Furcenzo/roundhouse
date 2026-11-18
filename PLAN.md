@@ -45,7 +45,8 @@ Core and tested.
 Devolutions Remote Desktop Manager is a full Royal TSX competitor, not a plain RDP client, so it is not a good
 default; it can still be picked as the `.rdp` client.
 
-Passwords are **never** passed as command-line arguments (visible in `ps`) or written to `.rdp` files.
+Passwords are **never** passed as command-line arguments (visible in `ps`) or written to `.rdp` files – with one
+opt-in exception per WinBox entry in 0.2 (see Bitwarden below).
 
 ## Search panel and hotkey
 
@@ -73,6 +74,15 @@ Passwords are **never** passed as command-line arguments (visible in `ps`) or wr
 - On connect: `bw get item <vaultItemID>` → the password is copied to the clipboard as a concealed item
   (`org.nspasteboard.ConcealedType`) and cleared after 30 s unless the user copied something else.
 - SSH: preferably keys. The Bitwarden desktop app has its own SSH agent that Roundhouse does not need to know about.
+- WinBox: an option per entry, **"Connect at once (password from Bitwarden)"**, off by default (approved by the user
+  for 0.2).
+  - On: when connecting, Roundhouse gets the password from Bitwarden and starts WinBox with
+    `<address> <user> <password>`, so it logs in at once. The password is never written to disk or to a log.
+  - Next to the option a short warning: WinBox gets the password as a command-line argument, and other processes
+    on the Mac can see it in the process list while WinBox runs. The user accepts this, mainly for the switch and
+    the firewall.
+  - Off: as in 0.1 – only the address is passed (with a user entered in Roundhouse: `<address> <user> ""`), and
+    WinBox uses its own saved login.
 - Development and tests use a mock `bw` and sample data only – never the user's real vault.
 
 ## MVP (0.1)
