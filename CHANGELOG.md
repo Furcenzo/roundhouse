@@ -5,6 +5,8 @@ version into the GitHub Release notes, so add a section before publishing.
 
 ## Unreleased
 
+## 0.3.0
+
 - **SSH: Enter the password into ssh** (per entry with a Bitwarden item, off by default). In Ghostty, ssh asks
   Roundhouse for the password through `SSH_ASKPASS` and logs in without pasting; the password never goes on a command
   line, to disk or to the clipboard. Only the password prompt of the entry's own host is answered, once; a new host
