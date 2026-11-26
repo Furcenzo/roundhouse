@@ -97,6 +97,10 @@ opt-in exception per WinBox entry in 0.2 (see Bitwarden below).
 ## Later
 
 - ~~Bitwarden integration~~ – done in 0.2.
+- 0.3: SSH password from Bitwarden without pasting – an `SSH_ASKPASS` helper in the app bundle
+  (`SSH_ASKPASS_REQUIRE=force`) asks the running Roundhouse for the password once, over a socket only the user can
+  open, with a one-time token that expires in seconds; no password on a command line or on disk. Other prompts
+  (host key yes/no, a second try) go to the terminal (`/dev/tty`). Opt-in per SSH entry, off by default.
 - SFTP, per-kind default client in settings, optional menu bar icon.
 - Duplicate an entry, import/export JSON, credentials per group.
 

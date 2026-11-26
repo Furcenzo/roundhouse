@@ -5,6 +5,8 @@ version into the GitHub Release notes, so add a section before publishing.
 
 ## Unreleased
 
+## 0.2.0
+
 - **Passwords from Bitwarden or Vaultwarden** through the official Bitwarden CLI (`bw`). An entry refers to an item of
   your vault; on connect Roundhouse unlocks the vault if needed (the master password is never stored) and copies the
   password to the clipboard, hidden from clipboard managers and cleared after 30 seconds. The vault locks again after
