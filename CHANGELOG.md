@@ -5,6 +5,10 @@ version into the GitHub Release notes, so add a section before publishing.
 
 ## Unreleased
 
+## 0.1.2
+
+- Roundhouse is now signed with a permanent certificate, so macOS recognizes every update as the same app.
+
 ## 0.1.1
 
 - The connection list now always comes to the front when you open Roundhouse; before, it could stay hidden behind
