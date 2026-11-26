@@ -18,6 +18,7 @@ struct SettingsView: View {
     @State private var needsApproval = LoginItem.needsApproval
     @State private var showInDock = Preferences.showInDock
     @State private var sshTerminal = Preferences.sshTerminal
+    @State private var lockMinutes = Preferences.vaultLockMinutes
 
     var body: some View {
         Form {
@@ -89,9 +90,11 @@ struct SettingsView: View {
                     .disabled(!FileManager.default.fileExists(atPath: model.dataFileURL.path))
                 }
             }
+
+            BitwardenSettings(vault: model.vault, lockMinutes: $lockMinutes)
         }
         .formStyle(.grouped)
-        .frame(width: 480)
+        .frame(width: 520)
         .fixedSize(horizontal: false, vertical: true)
         .onDisappear { stopRecording() }
     }
@@ -138,6 +141,74 @@ struct SettingsView: View {
         } else {
             hotKeyTaken = true
             HotKeyCenter.shared.register(hotKey)
+        }
+    }
+}
+
+/// Status of the Bitwarden CLI, unlock/lock, the automatic lock, and how to set `bw` up.
+private struct BitwardenSettings: View {
+    let vault: Vault
+    @Binding var lockMinutes: Int
+
+    var body: some View {
+        Section {
+            LabeledContent("Vault") {
+                HStack {
+                    status
+                    switch vault.state {
+                    case .locked:
+                        Button("Unlock…") { Task { _ = await vault.ensureUnlocked(for: nil) } }
+                    case .unlocked:
+                        Button("Lock") { vault.lock() }
+                    case .notInstalled, .notLoggedIn:
+                        Button("Check Again") { Task { await vault.refresh() } }
+                    case .unknown:
+                        EmptyView()
+                    }
+                }
+            }
+            if let server = vault.server, vault.state != .notInstalled {
+                LabeledContent("Server") { Text(verbatim: server).textSelection(.enabled) }
+            }
+            if let account = vault.account, vault.state == .locked || vault.state == .unlocked {
+                LabeledContent("Account") { Text(verbatim: account).textSelection(.enabled) }
+            }
+            Picker("Lock after", selection: $lockMinutes) {
+                ForEach(Preferences.vaultLockChoices, id: \.self) { minutes in
+                    Text("\(minutes) min without use").tag(minutes)
+                }
+            }
+            .onChange(of: lockMinutes) { _, minutes in Preferences.vaultLockMinutes = minutes }
+        } header: {
+            Text(verbatim: "Bitwarden")
+        } footer: {
+            footer
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+        }
+        .task { await vault.refresh() }
+    }
+
+    @ViewBuilder private var status: some View {
+        switch vault.state {
+        case .unknown: Text("Checking…").foregroundStyle(.secondary)
+        case .notInstalled: Text("Bitwarden CLI not found").foregroundStyle(.secondary)
+        case .notLoggedIn: Text("Not logged in").foregroundStyle(.secondary)
+        case .locked: Label("Locked", systemImage: "lock.fill")
+        case .unlocked: Label("Unlocked", systemImage: "lock.open.fill").foregroundStyle(.green)
+        }
+    }
+
+    @ViewBuilder private var footer: some View {
+        switch vault.state {
+        case .notInstalled:
+            Text("Passwords come from Bitwarden or Vaultwarden through the official Bitwarden CLI. Install it with “brew install bitwarden-cli”, then run “bw config server <your server>” and “bw login” in Terminal.")
+        case .notLoggedIn:
+            Text("Run “bw config server <your server>” and “bw login” in Terminal once, then click Check Again.")
+        default:
+            Text("The master password is never stored. The vault also locks when the Mac sleeps or the screen locks.")
         }
     }
 }

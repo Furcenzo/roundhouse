@@ -67,3 +67,53 @@ import Testing
             == .launchApp(KnownClient.winBox, arguments: ["192.0.2.1", "ops", ""]))
     }
 }
+
+@Suite struct VaultLaunchTests {
+    let itemID = "6f1c2b3a-0d4e-4f50-9a61-7b8c9d0e1f21"
+    let credential = VaultCredential(username: "admin", password: "sample-switch-password")
+
+    @Test func winBoxLogsInAtOnceOnlyWhenTurnedOn() throws {
+        var entry = Connection(name: "sw", kind: .winbox, host: "192.0.2.2", vaultItemID: itemID)
+        // Off by default: the password never goes on the command line.
+        #expect(try LaunchPlan.make(for: entry, credential: credential)
+            == .launchApp(KnownClient.winBox, arguments: ["192.0.2.2"]))
+
+        entry.loginAtOnce = true
+        #expect(try LaunchPlan.make(for: entry, credential: credential)
+            == .launchApp(KnownClient.winBox, arguments: ["192.0.2.2", "admin", "sample-switch-password"]))
+        // The user of the entry wins over the one of the item.
+        entry.user = "ops"
+        #expect(try LaunchPlan.make(for: entry, credential: credential)
+            == .launchApp(KnownClient.winBox, arguments: ["192.0.2.2", "ops", "sample-switch-password"]))
+        // Without a credential (vault locked, cancelled) as in 0.1.
+        #expect(try LaunchPlan.make(for: entry) == .launchApp(KnownClient.winBox, arguments: ["192.0.2.2", "ops", ""]))
+    }
+
+    @Test func winBoxWithoutAnyUserPassesOnlyTheAddress() throws {
+        let entry = Connection(name: "sw", kind: .winbox, host: "192.0.2.2", vaultItemID: itemID, loginAtOnce: true)
+        #expect(try LaunchPlan.make(for: entry, credential: VaultCredential(username: nil, password: "x"))
+            == .launchApp(KnownClient.winBox, arguments: ["192.0.2.2"]))
+    }
+
+    @Test func atOnceNeedsAValidItem() {
+        let noItem = Connection(name: "sw", kind: .winbox, host: "192.0.2.2", loginAtOnce: true)
+        #expect(!noItem.logsInAtOnce)
+        let badItem = Connection(name: "sw", kind: .winbox, host: "192.0.2.2", vaultItemID: "-x", loginAtOnce: true)
+        #expect(!badItem.logsInAtOnce)
+    }
+
+    @Test func otherKindsNeverGetThePassword() throws {
+        for kind in [Connection.Kind.ssh, .rdp, .vnc, .web] {
+            let entry = Connection(name: "x", kind: kind, host: "192.0.2.5", user: "admin",
+                                   url: "https://192.0.2.5", vaultItemID: itemID, loginAtOnce: true)
+            let plan = try LaunchPlan.make(for: entry, credential: credential)
+            #expect(!String(describing: plan).contains("sample-switch-password"))
+        }
+    }
+
+    @Test func oldFilesDecode() throws {
+        let json = #"{"id":"86A3A420-8437-59B4-BA4F-C18F230F891D","kind":"winbox","name":"r","host":"192.0.2.1","tags":[],"source":{"manual":{}}}"#
+        let entry = try JSONDecoder().decode(Connection.self, from: Data(json.utf8))
+        #expect(entry.loginAtOnce == nil && entry.vaultItemID == nil && !entry.logsInAtOnce)
+    }
+}

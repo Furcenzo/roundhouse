@@ -28,6 +28,19 @@ enum Preferences {
         set { defaults.set(newValue, forKey: "sshTerminal") }
     }
 
+    /// The Bitwarden vault locks after this many minutes without use.
+    static var vaultLockMinutes: Int {
+        get { (defaults.object(forKey: "vaultLockMinutes") as? Int) ?? 15 }
+        set { defaults.set(newValue, forKey: "vaultLockMinutes") }
+    }
+
+    static let vaultLockChoices = [5, 15, 30, 60]
+
+    /// Path of the `bw` executable when it is not in a usual place (`defaults write … bwPath <path>`).
+    static var bwPath: String? {
+        defaults.string(forKey: "bwPath")
+    }
+
     static var hotKey: HotKey {
         get {
             guard let data = defaults.data(forKey: "hotKey"), let key = try? JSONDecoder().decode(HotKey.self, from: data)

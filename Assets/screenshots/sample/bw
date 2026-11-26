@@ -1,0 +1,87 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Furcenzo
+#
+# A stand-in for the Bitwarden CLI with made-up data, for the tests and the screenshots (-demo).
+# Never a real vault: the master password is "sample-password", the session key "sample-session-key".
+# BW_STUB_LOG=<file> appends the arguments of every call; BW_STUB_STATE=unauthenticated acts as if not logged in.
+
+[ -n "$BW_STUB_LOG" ] && printf '%s\n' "$*" >>"$BW_STUB_LOG"
+
+SESSION_OK=0
+[ "$BW_SESSION" = "sample-session-key" ] && SESSION_OK=1
+
+need_login() {
+    if [ "$BW_STUB_STATE" = "unauthenticated" ]; then
+        echo "You are not logged in." >&2
+        exit 1
+    fi
+}
+
+need_session() {
+    need_login
+    if [ $SESSION_OK = 0 ]; then
+        echo "Vault is locked." >&2
+        exit 1
+    fi
+}
+
+case "$1" in
+status)
+    if [ "$BW_STUB_STATE" = "unauthenticated" ]; then state=unauthenticated
+    elif [ $SESSION_OK = 1 ]; then state=unlocked
+    else state=locked
+    fi
+    printf '{"serverUrl":"https://vault.example.com","lastSync":"2026-01-01T00:00:00.000Z","userEmail":"user@example.com","userId":"00000000-0000-4000-8000-000000000000","status":"%s"}\n' "$state"
+    ;;
+unlock)
+    need_login
+    var=""
+    while [ $# -gt 0 ]; do
+        [ "$1" = "--passwordenv" ] && var="$2"
+        shift
+    done
+    if [ -n "$var" ] && [ "$(printenv "$var")" = "sample-password" ]; then
+        echo "sample-session-key"
+    else
+        echo "Invalid master password." >&2
+        exit 1
+    fi
+    ;;
+lock)
+    echo "Your vault is locked."
+    ;;
+sync)
+    need_session
+    echo "Syncing complete."
+    ;;
+list)
+    need_session
+    cat <<'JSON'
+[{"object":"item","id":"6f1c2b3a-0d4e-4f50-9a61-7b8c9d0e1f21","type":1,"name":"Core switch","notes":null,"login":{"username":"admin","password":"sample-switch-password","uris":[{"match":null,"uri":"https://192.0.2.2"}]}},
+{"object":"item","id":"0a1b2c3d-4e5f-4061-8273-8495a6b7c8d9","type":1,"name":"Proxmox root","notes":null,"login":{"username":"root@pam","password":"sample-proxmox-password","uris":[{"match":null,"uri":"https://192.0.2.10:8006"}]}},
+{"object":"item","id":"9e8d7c6b-5a49-4382-9170-6f5e4d3c2b1a","type":1,"name":"Firewall","notes":null,"login":{"username":"ops","password":"sample-firewall-password","uris":[]}},
+{"object":"item","id":"11111111-2222-4333-8444-555555555555","type":2,"name":"Sample note","notes":"not a login","secureNote":{"type":0}}]
+JSON
+    ;;
+get)
+    need_session
+    case "$3" in
+    6f1c2b3a-0d4e-4f50-9a61-7b8c9d0e1f21)
+        echo '{"id":"6f1c2b3a-0d4e-4f50-9a61-7b8c9d0e1f21","type":1,"name":"Core switch","login":{"username":"admin","password":"sample-switch-password"}}' ;;
+    0a1b2c3d-4e5f-4061-8273-8495a6b7c8d9)
+        echo '{"id":"0a1b2c3d-4e5f-4061-8273-8495a6b7c8d9","type":1,"name":"Proxmox root","login":{"username":"root@pam","password":"sample-proxmox-password"}}' ;;
+    9e8d7c6b-5a49-4382-9170-6f5e4d3c2b1a)
+        echo '{"id":"9e8d7c6b-5a49-4382-9170-6f5e4d3c2b1a","type":1,"name":"Firewall","login":{"username":"ops","password":"sample-firewall-password"}}' ;;
+    11111111-2222-4333-8444-555555555555)
+        echo '{"id":"11111111-2222-4333-8444-555555555555","type":2,"name":"Sample note","login":null}' ;;
+    *)
+        echo "Not found." >&2
+        exit 1 ;;
+    esac
+    ;;
+*)
+    echo "Unknown command." >&2
+    exit 1
+    ;;
+esac

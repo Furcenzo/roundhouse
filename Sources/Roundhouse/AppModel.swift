@@ -27,6 +27,8 @@ final class AppModel {
     private(set) var loadError: String?
     /// Sample data for screenshots (`--args -demo <folder>`): read-only, made-up reachability dots.
     let isDemo: Bool
+    /// Passwords from Bitwarden (in the demo the stub `bw` of the demo folder, unlocked with its sample password).
+    let vault: Vault
 
     /// `--args -demo <folder>`: `connections.json` and `ssh_config` of that folder instead of the user's own
     /// (the README screenshots use `Assets/screenshots/sample`). Nothing is saved.
@@ -38,17 +40,21 @@ final class AppModel {
     convenience init() {
         if let demo = Self.demoFolder {
             self.init(store: LibraryStore(fileURL: demo.appending(path: "connections.json")),
-                      sshConfigURL: demo.appending(path: "ssh_config"), isDemo: true)
+                      sshConfigURL: demo.appending(path: "ssh_config"), isDemo: true, vault: Vault(demoFolder: demo))
         } else {
             self.init(store: LibraryStore(fileURL: LibraryStore.defaultURL(folder: Self.dataFolder)),
-                      sshConfigURL: URL.homeDirectory.appending(path: ".ssh/config"), isDemo: false)
+                      sshConfigURL: URL.homeDirectory.appending(path: ".ssh/config"), isDemo: false, vault: Vault())
         }
     }
 
-    init(store: LibraryStore, sshConfigURL: URL, isDemo: Bool) {
+    init(store: LibraryStore, sshConfigURL: URL, isDemo: Bool, vault: Vault) {
         self.store = store
         self.sshConfigURL = sshConfigURL
         self.isDemo = isDemo
+        self.vault = vault
+        if isDemo {
+            Task { try? await vault.unlock(password: "sample-password") }
+        }
         // In the demo, `-demoWelcome YES` shows the introduction (screenshots).
         showWelcome = isDemo ? UserDefaults.standard.bool(forKey: "demoWelcome") : !Preferences.welcomeShown
         do {
@@ -140,10 +146,51 @@ final class AppModel {
 
     // MARK: - Connecting
 
+    /// Opens the connection. With a Bitwarden item, the password is copied to the clipboard first (or, for WinBox
+    /// with "Connect at once", passed to WinBox); cancelling the unlock cancels the connection.
     func connect(_ connection: Connection) {
-        guard Launcher.open(connection) else { return }
+        guard connection.hasVaultItem, let itemID = connection.vaultItemID else {
+            open(connection, credential: nil)
+            return
+        }
+        Task {
+            var credential: VaultCredential?
+            do throws(VaultError) {
+                credential = try await vault.credential(itemID: itemID, purpose: connection.name)
+                guard credential != nil else { return }
+            } catch {
+                // Connect anyway: the app may still have its own saved login.
+                Alerts.show(String(localized: "The password of “\(connection.name)” is not available."),
+                            detail: Vault.message(for: error))
+            }
+            if let credential {
+                let passedToWinBox = connection.logsInAtOnce
+                    && (connection.user?.isEmpty == false || credential.username != nil)
+                if !passedToWinBox { SecretClipboard.copy(credential.password) }
+            }
+            open(connection, credential: credential)
+        }
+    }
+
+    private func open(_ connection: Connection, credential: VaultCredential?) {
+        guard Launcher.open(connection, credential: credential) else { return }
         library.markUsed(connection)
         save()
+    }
+
+    /// Copies the password of the entry's Bitwarden item, or its address when it has none.
+    func copyPasswordOrAddress(_ connection: Connection) {
+        if connection.hasVaultItem {
+            Task { await vault.copyPassword(of: connection) }
+        } else {
+            copyAddress(connection)
+        }
+    }
+
+    func copyAddress(_ connection: Connection) {
+        let text = connection.kind == .web ? connection.address : connection.host
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 
     // MARK: - Reachability

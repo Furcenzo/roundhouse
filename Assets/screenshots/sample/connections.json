@@ -14,7 +14,9 @@
       "tags": [
         "pve"
       ],
-      "url": "https://192.0.2.10:8006"
+      "url": "https://192.0.2.10:8006",
+      "vaultItemID": "0a1b2c3d-4e5f-4061-8273-8495a6b7c8d9",
+      "vaultItemName": "Proxmox root"
     },
     {
       "group": "Homelab",
@@ -58,12 +60,15 @@
       "host": "192.0.2.2",
       "id": "F4261819-1667-5E6C-A447-27EF7FE09EA3",
       "kind": "winbox",
+      "loginAtOnce": true,
       "name": "Core switch",
       "source": {
         "manual": {}
       },
       "tags": [],
-      "user": "admin"
+      "user": "admin",
+      "vaultItemID": "6f1c2b3a-0d4e-4f50-9a61-7b8c9d0e1f21",
+      "vaultItemName": "Core switch"
     },
     {
       "group": "Network",

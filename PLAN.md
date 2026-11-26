@@ -96,7 +96,7 @@ opt-in exception per WinBox entry in 0.2 (see Bitwarden below).
 
 ## Later
 
-- Bitwarden integration (0.2).
+- ~~Bitwarden integration~~ – done in 0.2.
 - SFTP, per-kind default client in settings, optional menu bar icon.
 - Duplicate an entry, import/export JSON, credentials per group.
 
@@ -104,4 +104,3 @@ opt-in exception per WinBox entry in 0.2 (see Bitwarden below).
 
 - Dock icon: an app that is always running for the hotkey – show it in the Dock, or hide it (`AGENT_APP=1`) and open
   the main window from the panel (⌘,) or by launching the app again? Recommended: hidden, with an option to show it.
-- Installing `bw` CLI on the user's Mac (needed only for 0.2).

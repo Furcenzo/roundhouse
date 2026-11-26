@@ -30,6 +30,10 @@ struct MainView: View {
             .contextMenu(forSelectionType: UUID.self) { ids in
                 if ids.count == 1, let connection = ids.first.flatMap(model.connection(id:)) {
                     Button("Connect") { model.connect(connection) }
+                    if connection.hasVaultItem {
+                        Button("Copy Password") { Task { await model.vault.copyPassword(of: connection) } }
+                    }
+                    Button("Copy Address") { model.copyAddress(connection) }
                     if !connection.isImported {
                         Button("Duplicate") { model.duplicate(connection) }
                     }

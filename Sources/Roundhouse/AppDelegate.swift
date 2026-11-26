@@ -54,6 +54,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return false
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        model.vault.lockOnQuit()
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }

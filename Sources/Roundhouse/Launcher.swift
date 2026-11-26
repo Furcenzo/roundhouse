@@ -10,7 +10,7 @@ import UniformTypeIdentifiers
 enum Launcher {
     /// false when the connection could not be opened (an alert was shown).
     @discardableResult
-    static func open(_ connection: Connection) -> Bool {
+    static func open(_ connection: Connection, credential: VaultCredential? = nil) -> Bool {
         var client = connection.client
         if client == nil, connection.kind == .ssh {
             client = Preferences.sshTerminal
@@ -22,7 +22,7 @@ enum Launcher {
 
         let plan: LaunchPlan
         do {
-            plan = try LaunchPlan.make(for: connection, client: client)
+            plan = try LaunchPlan.make(for: connection, client: client, credential: credential)
         } catch {
             Alerts.show(String(localized: "“\(connection.name)” cannot be opened."), detail: message(for: error))
             return false

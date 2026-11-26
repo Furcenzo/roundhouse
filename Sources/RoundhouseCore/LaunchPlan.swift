@@ -43,7 +43,10 @@ public enum LaunchPlan: Equatable, Sendable {
     }
 
     /// The plan for `connection` opened with `client` (bundle ID; nil = the entry's own or the kind's default).
-    public static func make(for connection: Connection, client: String? = nil) throws(Problem) -> LaunchPlan {
+    /// `credential` (from Bitwarden) is used only by WinBox entries with `logsInAtOnce`; every other kind ignores it.
+    public static func make(for connection: Connection, client: String? = nil, credential: VaultCredential? = nil)
+        throws(Problem) -> LaunchPlan
+    {
         let client = client ?? connection.client ?? KnownClient.defaultClient(for: connection.kind)
         if connection.kind == .web {
             guard let url = connection.webURL, let scheme = url.scheme?.lowercased(),
@@ -73,8 +76,13 @@ public enum LaunchPlan: Equatable, Sendable {
         case .winbox:
             // WinBox 4 connects at once only when it gets all three of <address> <user> <password>. With the address
             // alone it opens its login window for that address and keeps the login saved in WinBox. So the empty
-            // password goes only with a user entered in Roundhouse (secrets never go on the command line).
+            // password goes only with a user entered in Roundhouse. The real password goes on the command line only
+            // when the user turned on "Connect at once" for this entry (visible to other processes while WinBox runs).
             let address = port.map { "\(bracketed(host)):\($0)" } ?? host
+            if connection.logsInAtOnce, let credential,
+               let login = user ?? credential.username?.trimmingCharacters(in: .whitespaces).nilIfEmpty {
+                return .launchApp(client ?? KnownClient.winBox, arguments: [address, login, credential.password])
+            }
             return .launchApp(client ?? KnownClient.winBox, arguments: user.map { [address, $0, ""] } ?? [address])
         case .web:
             fatalError("handled above")

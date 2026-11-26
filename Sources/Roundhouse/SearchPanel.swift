@@ -125,7 +125,8 @@ final class SearchPanelController: NSObject, NSWindowDelegate {
             guard results.indices.contains(state.selected) else { return true }
             let connection = results[state.selected]
             if command {
-                copyAddress(connection)
+                hide()
+                model.copyPasswordOrAddress(connection)
             } else {
                 connect(connection)
             }
@@ -145,12 +146,6 @@ final class SearchPanelController: NSObject, NSWindowDelegate {
         return false
     }
 
-    private func copyAddress(_ connection: Connection) {
-        let text = connection.kind == .web ? connection.address : connection.host
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-        hide()
-    }
 }
 
 private struct SearchPanelView: View {
@@ -216,7 +211,11 @@ private struct SearchPanelView: View {
             Divider()
             HStack(spacing: 16) {
                 Text("↩ Connect")
-                Text("⌘↩ Copy address")
+                if results.indices.contains(state.selected), results[state.selected].hasVaultItem {
+                    Text("⌘↩ Copy password")
+                } else {
+                    Text("⌘↩ Copy address")
+                }
                 Spacer()
                 Text("⌘O Edit list")
             }

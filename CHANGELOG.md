@@ -5,6 +5,16 @@ version into the GitHub Release notes, so add a section before publishing.
 
 ## Unreleased
 
+- **Passwords from Bitwarden or Vaultwarden** through the official Bitwarden CLI (`bw`). An entry refers to an item of
+  your vault; on connect Roundhouse unlocks the vault if needed (the master password is never stored) and copies the
+  password to the clipboard, hidden from clipboard managers and cleared after 30 seconds. The vault locks again after
+  15 minutes without use (changeable), when the Mac sleeps or the screen locks.
+- **Copy Password** in the entry and its context menu; ⌘↩ in the search panel copies the password of entries with a
+  Bitwarden item.
+- **WinBox: Connect at once (password from Bitwarden)**, off by default: WinBox gets the password on its command line
+  and logs in immediately. Other processes can see it in the process list while WinBox runs.
+- **Copy Address** in the context menu of the connection list.
+
 ## 0.1.2
 
 - Roundhouse is now signed with a permanent certificate, so macOS recognizes every update as the same app.

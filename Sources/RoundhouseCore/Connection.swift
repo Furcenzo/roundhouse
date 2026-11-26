@@ -50,8 +50,13 @@ public struct Connection: Codable, Identifiable, Hashable, Sendable {
     /// One level of folders, e.g. "Homelab"; nil or empty = no folder.
     public var group: String?
     public var tags: [String]
-    /// Reference to an item of the password vault (0.2), never the secret itself.
+    /// Reference to a Bitwarden item (its ID), never the secret itself.
     public var vaultItemID: String?
+    /// Name of that item, shown while the vault is locked (not a secret).
+    public var vaultItemName: String?
+    /// WinBox only: pass the password from Bitwarden on the command line, so WinBox logs in at once.
+    /// Off (nil) by default – other processes can see command-line arguments.
+    public var loginAtOnce: Bool?
     /// Bundle ID of the app that opens this entry; nil = default client of the kind.
     public var client: String?
     public var source: Source
@@ -63,7 +68,7 @@ public struct Connection: Codable, Identifiable, Hashable, Sendable {
     public init(
         id: UUID = UUID(), name: String, kind: Kind, host: String, port: Int? = nil, user: String? = nil,
         url: String? = nil, group: String? = nil, tags: [String] = [], vaultItemID: String? = nil,
-        client: String? = nil, source: Source = .manual, notes: String? = nil, proxy: String? = nil
+        vaultItemName: String? = nil, loginAtOnce: Bool? = nil, client: String? = nil, source: Source = .manual, notes: String? = nil, proxy: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -75,6 +80,8 @@ public struct Connection: Codable, Identifiable, Hashable, Sendable {
         self.group = group
         self.tags = tags
         self.vaultItemID = vaultItemID
+        self.vaultItemName = vaultItemName
+        self.loginAtOnce = loginAtOnce
         self.client = client
         self.source = source
         self.notes = notes
@@ -82,6 +89,12 @@ public struct Connection: Codable, Identifiable, Hashable, Sendable {
     }
 
     public var isImported: Bool { source != .manual }
+
+    /// The entry refers to a Bitwarden item.
+    public var hasVaultItem: Bool { vaultItemID.map(BitwardenCLI.isValidItemID) ?? false }
+
+    /// WinBox gets the password from Bitwarden on the command line and logs in at once.
+    public var logsInAtOnce: Bool { kind == .winbox && loginAtOnce == true && hasVaultItem }
 
     /// The port the connection uses.
     public var effectivePort: Int {

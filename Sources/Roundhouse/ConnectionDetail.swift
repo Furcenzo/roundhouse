@@ -22,6 +22,7 @@ struct ConnectionDetail: View {
 private struct ConnectionEditor: View {
     let model: AppModel
     @State private var draft: Connection
+    @State private var choosingItem = false
     @FocusState private var nameFocused: Bool
 
     init(model: AppModel, original: Connection) {
@@ -82,6 +83,8 @@ private struct ConnectionEditor: View {
                 }
             }
 
+            PasswordSection(model: model, draft: $draft, choosingItem: $choosingItem)
+
             Section("Notes") {
                 TextEditor(text: optional($draft.notes))
                     .frame(minHeight: 60)
@@ -91,6 +94,9 @@ private struct ConnectionEditor: View {
             Section {
                 HStack {
                     Spacer()
+                    if draft.hasVaultItem {
+                        Button("Copy Password") { Task { await model.vault.copyPassword(of: draft) } }
+                    }
                     Button("Connect") { model.connect(draft) }
                         .keyboardShortcut(.defaultAction)
                         .disabled(draft.kind == .web ? draft.webURL == nil : draft.host.isEmpty)
@@ -110,6 +116,12 @@ private struct ConnectionEditor: View {
             if model.justAdded == draft.id {
                 nameFocused = true
                 model.justAdded = nil
+            }
+        }
+        .sheet(isPresented: $choosingItem) {
+            VaultItemPicker(vault: model.vault, host: draft.reachabilityHost) { item in
+                draft.vaultItemID = item.id
+                draft.vaultItemName = item.name
             }
         }
         .onChange(of: draft.kind) {
@@ -160,6 +172,156 @@ private struct ConnectionEditor: View {
         } set: { text in
             binding.wrappedValue = text.isEmpty ? nil : text
         }
+    }
+}
+
+/// The Bitwarden item of the entry and, for WinBox, "Connect at once".
+private struct PasswordSection: View {
+    let model: AppModel
+    @Binding var draft: Connection
+    @Binding var choosingItem: Bool
+
+    var body: some View {
+        Section {
+            LabeledContent("Bitwarden item") {
+                HStack {
+                    if draft.vaultItemID != nil {
+                        Text(verbatim: draft.vaultItemName ?? draft.vaultItemID ?? "")
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Button("Change…") { choosingItem = true }
+                        Button("Remove") {
+                            draft.vaultItemID = nil
+                            draft.vaultItemName = nil
+                            draft.loginAtOnce = nil
+                        }
+                    } else {
+                        Button("Choose…") { choosingItem = true }
+                    }
+                }
+            }
+            if draft.kind == .winbox, draft.vaultItemID != nil {
+                Toggle("Connect at once (password from Bitwarden)", isOn: Binding {
+                    draft.loginAtOnce == true
+                } set: {
+                    draft.loginAtOnce = $0 ? true : nil
+                })
+                Label(
+                    "WinBox gets the password as a command-line argument: other processes on this Mac can see it in the process list while WinBox runs.",
+                    systemImage: "exclamationmark.triangle"
+                )
+                .font(.caption)
+                .foregroundStyle(draft.loginAtOnce == true ? .orange : .secondary)
+            }
+        } header: {
+            Text("Password")
+        } footer: {
+            Group {
+                if draft.vaultItemID == nil {
+                    Text("Roundhouse stores only a reference to the Bitwarden item, never the password.")
+                } else if draft.logsInAtOnce {
+                    Text("On connect, WinBox gets the user and the password and logs in at once.")
+                } else {
+                    Text("On connect, the password is copied to the clipboard and cleared after 30 seconds.")
+                }
+            }
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+/// Picks a login item of the vault. Shows names, users and addresses only – passwords are never read here.
+private struct VaultItemPicker: View {
+    let vault: Vault
+    /// Items whose address contains the entry's host come first.
+    let host: String
+    let choose: (VaultItemSummary) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var items: [VaultItemSummary]?
+    @State private var problem: String?
+    @State private var query = ""
+    @State private var selection: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Choose a Bitwarden Item")
+                .font(.headline)
+            TextField("Search", text: $query)
+                .textFieldStyle(.roundedBorder)
+            Group {
+                if let problem {
+                    ContentUnavailableView {
+                        Label("The vault is not available", systemImage: "lock")
+                    } description: {
+                        Text(verbatim: problem)
+                    }
+                } else if let items {
+                    List(filtered(items), selection: $selection) { item in
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(verbatim: item.name)
+                            let detail = [item.username, item.uri].compactMap { $0 }.joined(separator: " · ")
+                            if !detail.isEmpty {
+                                Text(verbatim: detail)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .tag(item.id)
+                    }
+                    .contextMenu(forSelectionType: String.self) { _ in } primaryAction: { _ in finish() }
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .frame(maxHeight: .infinity)
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Choose") { finish() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(selection == nil)
+            }
+        }
+        .padding()
+        .frame(width: 480, height: 420)
+        .task { await load() }
+    }
+
+    private func filtered(_ items: [VaultItemSummary]) -> [VaultItemSummary] {
+        let words = query.lowercased().split(separator: " ")
+        let matching = items.filter { item in
+            let text = [item.name, item.username ?? "", item.uri ?? ""].joined(separator: " ").lowercased()
+            return words.allSatisfy { text.contains($0) }
+        }
+        let host = host.lowercased()
+        guard !host.isEmpty else { return matching }
+        return matching.filter { $0.uri?.lowercased().contains(host) == true }
+            + matching.filter { $0.uri?.lowercased().contains(host) != true }
+    }
+
+    private func load() async {
+        guard await vault.ensureUnlocked(for: nil) else {
+            dismiss()
+            return
+        }
+        do {
+            let loaded = try await vault.loginItems()
+            items = loaded
+            selection = filtered(loaded).first { !host.isEmpty && $0.uri?.lowercased().contains(host.lowercased()) == true }?.id
+        } catch {
+            problem = Vault.message(for: error)
+        }
+    }
+
+    private func finish() {
+        guard let id = selection, let item = items?.first(where: { $0.id == id }) else { return }
+        choose(item)
+        dismiss()
     }
 }
 
