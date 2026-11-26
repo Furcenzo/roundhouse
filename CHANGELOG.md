@@ -9,6 +9,8 @@ version into the GitHub Release notes, so add a section before publishing.
   your vault; on connect Roundhouse unlocks the vault if needed (the master password is never stored) and copies the
   password to the clipboard, hidden from clipboard managers and cleared after 30 seconds. The vault locks again after
   15 minutes without use (changeable), when the Mac sleeps or the screen locks.
+- The item picker downloads new items from the server first (at most once a minute; **Sync** forces it) and shows
+  when the vault was last synced; offline it shows the items saved on the Mac.
 - **Copy Password** in the entry and its context menu; ⌘↩ in the search panel copies the password of entries with a
   Bitwarden item.
 - **WinBox: Connect at once (password from Bitwarden)**, off by default: WinBox gets the password on its command line

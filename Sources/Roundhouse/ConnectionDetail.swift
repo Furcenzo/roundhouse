@@ -242,13 +242,28 @@ private struct VaultItemPicker: View {
     @Environment(\.dismiss) private var dismiss
     @State private var items: [VaultItemSummary]?
     @State private var problem: String?
+    /// The last sync failed (offline): the list comes from the copy saved on this Mac.
+    @State private var syncProblem: String?
+    @State private var syncing = false
     @State private var query = ""
     @State private var selection: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Choose a Bitwarden Item")
-                .font(.headline)
+            HStack {
+                Text("Choose a Bitwarden Item")
+                    .font(.headline)
+                Spacer()
+                if syncing {
+                    ProgressView().controlSize(.small)
+                } else if let date = vault.lastSync {
+                    Text("Synced \(date, format: .relative(presentation: .named))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Button("Sync") { Task { await reload(force: true) } }
+                    .disabled(syncing || problem != nil)
+            }
             TextField("Search", text: $query)
                 .textFieldStyle(.roundedBorder)
             Group {
@@ -259,6 +274,12 @@ private struct VaultItemPicker: View {
                         Text(verbatim: problem)
                     }
                 } else if let items {
+                    if let syncProblem {
+                        Label("Could not sync: \(syncProblem) Showing the items saved on this Mac.",
+                              systemImage: "wifi.exclamationmark")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
                     List(filtered(items), selection: $selection) { item in
                         VStack(alignment: .leading, spacing: 1) {
                             Text(verbatim: item.name)
@@ -309,10 +330,18 @@ private struct VaultItemPicker: View {
             dismiss()
             return
         }
+        await reload(force: false)
+        selection = items.flatMap { filtered($0).first { !host.isEmpty && $0.uri?.lowercased().contains(host.lowercased()) == true }?.id }
+    }
+
+    /// Syncs first (when the last sync is over a minute old, or `force`), then lists the items.
+    private func reload(force: Bool) async {
+        syncing = true
+        syncProblem = await vault.sync(force: force)
+        syncing = false
         do {
-            let loaded = try await vault.loginItems()
-            items = loaded
-            selection = filtered(loaded).first { !host.isEmpty && $0.uri?.lowercased().contains(host.lowercased()) == true }?.id
+            items = try await vault.loginItems()
+            problem = nil
         } catch {
             problem = Vault.message(for: error)
         }

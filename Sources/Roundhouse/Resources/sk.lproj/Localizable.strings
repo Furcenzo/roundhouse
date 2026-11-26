@@ -30,6 +30,7 @@
 "Copy" = "Kopírovať";
 "Copy Address" = "Kopírovať adresu";
 "Copy Password" = "Kopírovať heslo";
+"Could not sync: %@ Showing the items saved on this Mac." = "Synchronizácia zlyhala: %@ Zobrazujú sa položky uložené na tomto Macu.";
 "Cut" = "Vystrihnúť";
 "Default (%@)" = "Predvolená (%@)";
 "Delete" = "Vymazať";
@@ -105,6 +106,8 @@
 "Show in Finder" = "Zobraziť vo Finderi";
 "Start at login" = "Spustiť po prihlásení";
 "Starting at login could not be changed." = "Spúšťanie po prihlásení sa nepodarilo zmeniť.";
+"Sync" = "Synchronizovať";
+"Synced %@" = "Synchronizované %@";
 "Tags" = "Štítky";
 "Terminal for SSH" = "Terminál pre SSH";
 "The app %@ is not installed. Choose another app in the entry." = "Aplikácia %@ nie je nainštalovaná. V zázname vyberte inú.";

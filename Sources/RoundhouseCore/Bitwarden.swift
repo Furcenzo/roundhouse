@@ -12,11 +12,31 @@ public struct VaultStatus: Decodable, Equatable, Sendable {
     public var status: State
     public var serverUrl: String?
     public var userEmail: String?
+    /// When `bw` last downloaded the vault (also by `bw sync` in Terminal).
+    public var lastSync: Date?
 
-    public init(status: State, serverUrl: String? = nil, userEmail: String? = nil) {
+    public init(status: State, serverUrl: String? = nil, userEmail: String? = nil, lastSync: Date? = nil) {
         self.status = status
         self.serverUrl = serverUrl
         self.userEmail = userEmail
+        self.lastSync = lastSync
+    }
+
+    private enum CodingKeys: String, CodingKey { case status, serverUrl, userEmail, lastSync }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        status = try container.decode(State.self, forKey: .status)
+        serverUrl = try container.decodeIfPresent(String.self, forKey: .serverUrl)
+        userEmail = try container.decodeIfPresent(String.self, forKey: .userEmail)
+        lastSync = (try? container.decodeIfPresent(String.self, forKey: .lastSync)).flatMap(Self.date)
+    }
+
+    /// "2026-01-01T00:00:00.000Z"
+    static func date(_ text: String) -> Date? {
+        let withFraction = ISO8601DateFormatter()
+        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return withFraction.date(from: text) ?? ISO8601DateFormatter().date(from: text)
     }
 }
 
@@ -322,5 +342,54 @@ private final class TimeoutFlag: @unchecked Sendable {
     var value: Bool {
         get { lock.withLock { flag } }
         set { lock.withLock { flag = newValue } }
+    }
+}
+
+/// Runs `bw sync` at most once per `minimumInterval` (unless forced); calls made while a sync runs wait for that one
+/// instead of starting another.
+public actor VaultSyncer {
+    public let cli: BitwardenCLI
+    public let minimumInterval: TimeInterval
+    private let now: @Sendable () -> Date
+    /// When the vault was last downloaded successfully.
+    public private(set) var lastSync: Date?
+    private var running: Task<Date, Error>?
+
+    public init(cli: BitwardenCLI, minimumInterval: TimeInterval = 60, lastSync: Date? = nil,
+                now: @escaping @Sendable () -> Date = Date.init) {
+        self.cli = cli
+        self.minimumInterval = minimumInterval
+        self.lastSync = lastSync
+        self.now = now
+    }
+
+    /// Syncs if the last sync is older than `minimumInterval` (or `force`). Returns true when `bw sync` ran.
+    @discardableResult
+    public func sync(session: String, force: Bool = false) async throws(VaultError) -> Bool {
+        if let running {
+            try await wait(for: running)
+            return true
+        }
+        if !force, let lastSync, now().timeIntervalSince(lastSync) < minimumInterval { return false }
+        let cli = cli
+        let now = now
+        let task = Task<Date, Error> {
+            try await cli.sync(session: session)
+            return now()
+        }
+        running = task
+        defer { running = nil }
+        try await wait(for: task)
+        return true
+    }
+
+    private func wait(for task: Task<Date, Error>) async throws(VaultError) {
+        do {
+            lastSync = try await task.value
+        } catch let error as VaultError {
+            throw error
+        } catch {
+            throw .failed(error.localizedDescription)
+        }
     }
 }

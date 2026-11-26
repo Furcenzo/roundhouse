@@ -4,7 +4,8 @@
 #
 # A stand-in for the Bitwarden CLI with made-up data, for the tests and the screenshots (-demo).
 # Never a real vault: the master password is "sample-password", the session key "sample-session-key".
-# BW_STUB_LOG=<file> appends the arguments of every call; BW_STUB_STATE=unauthenticated acts as if not logged in.
+# BW_STUB_LOG=<file> appends the arguments of every call; BW_STUB_STATE=unauthenticated acts as if not logged in;
+# BW_STUB_OFFLINE=1 makes sync fail; BW_STUB_SYNC_DELAY=<seconds> makes it slow.
 
 [ -n "$BW_STUB_LOG" ] && printf '%s\n' "$*" >>"$BW_STUB_LOG"
 
@@ -53,6 +54,11 @@ lock)
     ;;
 sync)
     need_session
+    if [ "$BW_STUB_OFFLINE" = "1" ]; then
+        echo "Syncing failed: fetch failed" >&2
+        exit 1
+    fi
+    [ -n "$BW_STUB_SYNC_DELAY" ] && sleep "$BW_STUB_SYNC_DELAY"
     echo "Syncing complete."
     ;;
 list)

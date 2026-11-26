@@ -21,9 +21,12 @@ final class Vault {
     private(set) var state: State = .unknown
     private(set) var server: String?
     private(set) var account: String?
+    /// When the vault was last downloaded from the server (by Roundhouse or `bw sync`).
+    private(set) var lastSync: Date?
 
     @ObservationIgnored private var session: String?
     @ObservationIgnored private var lockTask: Task<Void, Never>?
+    @ObservationIgnored private var syncer: VaultSyncer?
     @ObservationIgnored private var observers: [(NotificationCenter, NSObjectProtocol)] = []
     @ObservationIgnored private let demoFolder: URL?
 
@@ -61,6 +64,7 @@ final class Vault {
             let status = try await cli.status(session: session)
             server = status.serverUrl
             account = status.userEmail
+            if let date = status.lastSync, date > (lastSync ?? .distantPast) { lastSync = date }
             switch status.status {
             case .unauthenticated: forget(); state = .notLoggedIn
             case .locked: forget(); state = .locked
@@ -80,8 +84,23 @@ final class Vault {
         session = key
         state = .unlocked
         touch()
-        // New items in the picker; offline is fine too.
-        Task { try? await cli.sync(session: key) }
+        syncer = VaultSyncer(cli: cli, lastSync: lastSync)
+        // Start downloading new items at once; the item picker waits for this sync. Offline is fine too.
+        Task { _ = await sync() }
+    }
+
+    /// Downloads the vault if the last sync is more than a minute old (or `force`). nil when done or not needed,
+    /// otherwise why it failed (the items saved on this Mac stay usable).
+    func sync(force: Bool = false) async -> String? {
+        guard let syncer, let key = session else { return nil }
+        do {
+            try await syncer.sync(session: key, force: force)
+            if let date = await syncer.lastSync { lastSync = date }
+            return nil
+        } catch {
+            if error == .locked { forget(); state = .locked }
+            return Vault.message(for: error)
+        }
     }
 
     /// Forgets the session key and locks `bw`, so the key stops working.
@@ -101,6 +120,7 @@ final class Vault {
 
     private func forget() {
         session = nil
+        syncer = nil
         lockTask?.cancel()
         lockTask = nil
     }

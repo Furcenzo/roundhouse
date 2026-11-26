@@ -16,7 +16,8 @@ import Testing
     @Test func statusFollowsTheSession() async throws {
         #expect(try await cli.status(session: nil).status == .locked)
         let unlocked = try await cli.status(session: "sample-session-key")
-        #expect(unlocked == VaultStatus(status: .unlocked, serverUrl: "https://vault.example.com", userEmail: "user@example.com"))
+        #expect(unlocked == VaultStatus(status: .unlocked, serverUrl: "https://vault.example.com",
+                                        userEmail: "user@example.com", lastSync: Date(timeIntervalSince1970: 1_767_225_600)))
     }
 
     @Test func unlockKeepsThePasswordOffTheCommandLine() async throws {
@@ -95,11 +96,82 @@ import Testing
     }
 }
 
-/// The stub with extra environment variables for the test (BW_STUB_LOG, BW_STUB_STATE).
+@Suite struct VaultSyncerTests {
+    let session = "sample-session-key"
+
+    func calls(_ log: URL) -> Int {
+        ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").filter { $0.hasPrefix("sync") }.count
+    }
+
+    func tempLog() -> URL {
+        FileManager.default.temporaryDirectory.appending(path: "RoundhouseTests-sync-\(UUID().uuidString).log")
+    }
+
+    @Test func throttlesUnlessForced() async throws {
+        let log = tempLog()
+        defer { try? FileManager.default.removeItem(at: log) }
+        let clock = TestClock()
+        let syncer = VaultSyncer(cli: try LoggingCLI(base: BitwardenTests().cli, log: log).cli(), minimumInterval: 60,
+                                 now: { clock.now })
+        #expect(try await syncer.sync(session: session))
+        #expect(await syncer.lastSync == clock.now)
+        clock.advance(30)
+        #expect(try await !syncer.sync(session: session))
+        #expect(try await syncer.sync(session: session, force: true))
+        clock.advance(61)
+        #expect(try await syncer.sync(session: session))
+        #expect(calls(log) == 3)
+    }
+
+    @Test func respectsTheLastSyncOfBw() async throws {
+        let log = tempLog()
+        defer { try? FileManager.default.removeItem(at: log) }
+        let clock = TestClock()
+        let syncer = VaultSyncer(cli: try LoggingCLI(base: BitwardenTests().cli, log: log).cli(),
+                                 lastSync: clock.now.addingTimeInterval(-10), now: { clock.now })
+        #expect(try await !syncer.sync(session: session))
+        #expect(calls(log) == 0)
+    }
+
+    @Test func concurrentCallsShareOneSync() async throws {
+        let log = tempLog()
+        defer { try? FileManager.default.removeItem(at: log) }
+        let cli = try LoggingCLI(base: BitwardenTests().cli, log: log, extra: ["BW_STUB_SYNC_DELAY": "0.5"]).cli()
+        let syncer = VaultSyncer(cli: cli)
+        async let first = syncer.sync(session: session)
+        async let second = syncer.sync(session: session)
+        _ = try await (first, second)
+        #expect(calls(log) == 1)
+    }
+
+    @Test func offlineKeepsTheOldTime() async throws {
+        let log = tempLog()
+        defer { try? FileManager.default.removeItem(at: log) }
+        let before = Date(timeIntervalSince1970: 1_000)
+        let cli = try LoggingCLI(base: BitwardenTests().cli, log: log, extra: ["BW_STUB_OFFLINE": "1"]).cli()
+        let syncer = VaultSyncer(cli: cli, lastSync: before)
+        await #expect(throws: VaultError.self) { try await syncer.sync(session: session) }
+        #expect(await syncer.lastSync == before)
+        // The local copy still works offline.
+        #expect(try await cli.loginItems(session: session).count == 3)
+    }
+}
+
+private final class TestClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var current = Date(timeIntervalSince1970: 2_000_000_000)
+    var now: Date { lock.withLock { current } }
+    func advance(_ seconds: TimeInterval) { lock.withLock { current += seconds } }
+}
+
+/// The stub with extra environment variables for the test (BW_STUB_LOG, BW_STUB_STATE…).
 private struct LoggingCLI {
     let base: BitwardenCLI
     let log: URL?
     var state: String?
+    var extra: [String: String] = [:]
+
+    func cli() throws -> BitwardenCLI { try wrapper() }
 
     /// A wrapper script that sets the variables and runs the stub.
     private func wrapper() throws -> BitwardenCLI {
@@ -108,6 +180,7 @@ private struct LoggingCLI {
         var script = "#!/bin/sh\n"
         if let log { script += "export BW_STUB_LOG='\(log.path)'\n" }
         if let state { script += "export BW_STUB_STATE='\(state)'\n" }
+        for (key, value) in extra { script += "export \(key)='\(value)'\n" }
         script += "exec '\(base.executable.path)' \"$@\"\n"
         let file = folder.appending(path: "bw")
         try Data(script.utf8).write(to: file)
