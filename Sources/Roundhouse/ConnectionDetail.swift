@@ -213,6 +213,19 @@ private struct PasswordSection: View {
                 .font(.caption)
                 .foregroundStyle(draft.loginAtOnce == true ? .orange : .secondary)
             }
+            if draft.kind == .ssh, draft.vaultItemID != nil {
+                Toggle("Enter the password into ssh", isOn: Binding {
+                    draft.sshAskpass == true
+                } set: {
+                    draft.sshAskpass = $0 ? true : nil
+                })
+                if draft.sshAskpass == true, Launcher.client(for: draft) != KnownClient.ghostty {
+                    Label("Works only in Ghostty; with another terminal the password is copied to the clipboard.",
+                          systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
         } header: {
             Text("Password")
         } footer: {
@@ -221,6 +234,8 @@ private struct PasswordSection: View {
                     Text("Roundhouse stores only a reference to the Bitwarden item, never the password.")
                 } else if draft.logsInAtOnce {
                     Text("On connect, WinBox gets the user and the password and logs in at once.")
+                } else if draft.entersSSHPassword, Launcher.client(for: draft) == KnownClient.ghostty {
+                    Text("When ssh asks for the password of this host, Roundhouse answers once – nothing goes on the command line or the clipboard. Other questions (a new host key, a code, a second try) stay in the terminal.")
                 } else {
                     Text("On connect, the password is copied to the clipboard and cleared after 30 seconds.")
                 }

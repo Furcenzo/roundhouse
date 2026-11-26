@@ -10,15 +10,11 @@ import UniformTypeIdentifiers
 enum Launcher {
     /// false when the connection could not be opened (an alert was shown).
     @discardableResult
-    static func open(_ connection: Connection, credential: VaultCredential? = nil) -> Bool {
-        var client = connection.client
-        if client == nil, connection.kind == .ssh {
-            client = Preferences.sshTerminal
-        }
-        // A missing terminal falls back to Terminal, which is always there.
-        if connection.kind == .ssh, let wanted = client, appURL(wanted) == nil {
-            client = KnownClient.terminal
-        }
+    /// `environment`: extra variables for an app started with arguments (ssh's askpass settings for Ghostty).
+    static func open(_ connection: Connection, credential: VaultCredential? = nil, environment: [String: String] = [:])
+        -> Bool
+    {
+        let client = client(for: connection)
 
         let plan: LaunchPlan
         do {
@@ -42,6 +38,7 @@ enum Launcher {
             guard let appURL = appURL(app) else { return missingApp(app, connection) }
             let configuration = activating()
             configuration.arguments = arguments
+            if !environment.isEmpty { configuration.environment = environment }
             configuration.createsNewApplicationInstance = true
             NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { _, error in
                 if let error { Task { @MainActor in failed(connection, error) } }
@@ -65,6 +62,19 @@ enum Launcher {
             }
         }
         return true
+    }
+
+    /// The app that opens `connection`: its own, the SSH terminal of Settings, or nil (default of the kind).
+    static func client(for connection: Connection) -> String? {
+        var client = connection.client
+        if client == nil, connection.kind == .ssh {
+            client = Preferences.sshTerminal
+        }
+        // A missing terminal falls back to Terminal, which is always there.
+        if connection.kind == .ssh, let wanted = client, appURL(wanted) == nil {
+            client = KnownClient.terminal
+        }
+        return client
     }
 
     static func appURL(_ bundleID: String) -> URL? {

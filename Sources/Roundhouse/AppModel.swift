@@ -163,17 +163,23 @@ final class AppModel {
                 Alerts.show(String(localized: "The password of “\(connection.name)” is not available."),
                             detail: Vault.message(for: error))
             }
+            var environment: [String: String] = [:]
             if let credential {
                 let passedToWinBox = connection.logsInAtOnce
                     && (connection.user?.isEmpty == false || credential.username != nil)
-                if !passedToWinBox { SecretClipboard.copy(credential.password) }
+                if connection.entersSSHPassword, Launcher.client(for: connection) == KnownClient.ghostty,
+                   let askpass = SSHAskpass.shared.environment(password: credential.password, host: connection.host) {
+                    environment = askpass
+                } else if !passedToWinBox {
+                    SecretClipboard.copy(credential.password)
+                }
             }
-            open(connection, credential: credential)
+            open(connection, credential: credential, environment: environment)
         }
     }
 
-    private func open(_ connection: Connection, credential: VaultCredential?) {
-        guard Launcher.open(connection, credential: credential) else { return }
+    private func open(_ connection: Connection, credential: VaultCredential?, environment: [String: String] = [:]) {
+        guard Launcher.open(connection, credential: credential, environment: environment) else { return }
         library.markUsed(connection)
         save()
     }

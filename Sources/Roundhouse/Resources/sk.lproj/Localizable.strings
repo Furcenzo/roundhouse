@@ -43,6 +43,7 @@
 "e.g. Homelab" = "napr. Homelab";
 "e.g. Proxmox" = "napr. Proxmox";
 "Edit" = "Upraviť";
+"Enter the password into ssh" = "Zadať heslo do ssh automaticky";
 "Enter your master password to get the password for “%@”. Roundhouse does not store it." = "Zadajte hlavné heslo, aby Roundhouse získal heslo pre „%@“. Roundhouse ho neukladá.";
 "Enter your master password. Roundhouse does not store it." = "Zadajte hlavné heslo. Roundhouse ho neukladá.";
 "File" = "Súbor";
@@ -146,9 +147,11 @@
 "Vault" = "Trezor";
 "Via" = "Cez";
 "Welcome to Roundhouse" = "Vitajte v Roundhouse";
+"When ssh asks for the password of this host, Roundhouse answers once – nothing goes on the command line or the clipboard. Other questions (a new host key, a code, a second try) stay in the terminal." = "Keď sa ssh spýta na heslo tohto hostiteľa, Roundhouse ho raz zadá – nič nejde do príkazového riadku ani do schránky. Ostatné otázky (nový kľúč hostiteľa, kód, ďalší pokus) ostávajú v termináli.";
 "WinBox gets the password as a command-line argument: other processes on this Mac can see it in the process list while WinBox runs." = "WinBox dostane heslo ako argument príkazového riadku: kým WinBox beží, iné procesy na tomto Macu ho vidia v zozname procesov.";
 "Window" = "Okno";
 "Without the Dock icon, open the connection list from the search panel (⌘O) or by opening Roundhouse again." = "Bez ikony v Docku otvoríte zoznam pripojení z vyhľadávacieho panela (⌘O) alebo opätovným otvorením Roundhouse.";
+"Works only in Ghostty; with another terminal the password is copied to the clipboard." = "Funguje len v Ghostty; s iným terminálom sa heslo skopíruje do schránky.";
 "“%@” cannot be opened." = "„%@“ sa nedá otvoriť.";
 "↩ Connect" = "↩ Pripojiť";
 "⌘O Edit list" = "⌘O Upraviť zoznam";

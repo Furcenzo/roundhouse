@@ -9,6 +9,11 @@ import SwiftUI
 @MainActor
 enum RoundhouseMain {
     static func main() {
+        // Started by ssh as SSH_ASKPASS: answer and quit, no app.
+        let environment = ProcessInfo.processInfo.environment
+        if environment[Askpass.tokenVariable] != nil, CommandLine.arguments.count == 2 {
+            exit(AskpassHelper.run(arguments: CommandLine.arguments, environment: environment))
+        }
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate

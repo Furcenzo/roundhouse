@@ -113,6 +113,7 @@ final class Vault {
 
     /// The app quits: forget the key and lock `bw` (not waited for).
     func lockOnQuit() {
+        SSHAskpass.shared.stop()
         guard session != nil else { return }
         forget()
         cli?.startLock()
@@ -256,6 +257,32 @@ enum UnlockPrompt {
         field.stringValue = ""
         guard response == .alertFirstButtonReturn, !password.isEmpty else { return nil }
         return password
+    }
+}
+
+/// The app's askpass socket (started on first use). ssh started by Roundhouse in Ghostty asks it for the password.
+@MainActor
+final class SSHAskpass {
+    static let shared = SSHAskpass()
+    private var server: AskpassServer?
+
+    /// Environment for ssh with a one-time token for `password`; nil when the socket cannot be opened (then the
+    /// caller falls back to the clipboard).
+    func environment(password: String, host: String) -> [String: String]? {
+        guard let executable = Bundle.main.executablePath else { return nil }
+        if server == nil {
+            // The per-user temporary folder (mode 0700) keeps the socket path short and private.
+            let folder = FileManager.default.temporaryDirectory.appending(path: "Roundhouse-askpass")
+            server = try? AskpassServer(socketPath: folder.appending(path: "s.sock").path, allowedPeer: executable)
+        }
+        guard let server else { return nil }
+        let token = server.register(password: password, host: host.trimmingCharacters(in: .whitespaces))
+        return Askpass.environment(helper: executable, socket: server.socketPath, token: token)
+    }
+
+    func stop() {
+        server?.stop()
+        server = nil
     }
 }
 

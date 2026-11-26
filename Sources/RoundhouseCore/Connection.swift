@@ -57,6 +57,8 @@ public struct Connection: Codable, Identifiable, Hashable, Sendable {
     /// WinBox only: pass the password from Bitwarden on the command line, so WinBox logs in at once.
     /// Off (nil) by default – other processes can see command-line arguments.
     public var loginAtOnce: Bool?
+    /// SSH only: ssh gets the password from Bitwarden through Roundhouse (`SSH_ASKPASS`), no pasting. Off (nil) by default.
+    public var sshAskpass: Bool?
     /// Bundle ID of the app that opens this entry; nil = default client of the kind.
     public var client: String?
     public var source: Source
@@ -68,7 +70,7 @@ public struct Connection: Codable, Identifiable, Hashable, Sendable {
     public init(
         id: UUID = UUID(), name: String, kind: Kind, host: String, port: Int? = nil, user: String? = nil,
         url: String? = nil, group: String? = nil, tags: [String] = [], vaultItemID: String? = nil,
-        vaultItemName: String? = nil, loginAtOnce: Bool? = nil, client: String? = nil, source: Source = .manual, notes: String? = nil, proxy: String? = nil
+        vaultItemName: String? = nil, loginAtOnce: Bool? = nil, sshAskpass: Bool? = nil, client: String? = nil, source: Source = .manual, notes: String? = nil, proxy: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -82,6 +84,7 @@ public struct Connection: Codable, Identifiable, Hashable, Sendable {
         self.vaultItemID = vaultItemID
         self.vaultItemName = vaultItemName
         self.loginAtOnce = loginAtOnce
+        self.sshAskpass = sshAskpass
         self.client = client
         self.source = source
         self.notes = notes
@@ -95,6 +98,9 @@ public struct Connection: Codable, Identifiable, Hashable, Sendable {
 
     /// WinBox gets the password from Bitwarden on the command line and logs in at once.
     public var logsInAtOnce: Bool { kind == .winbox && loginAtOnce == true && hasVaultItem }
+
+    /// ssh asks Roundhouse for the password (only manual entries, whose host Roundhouse knows).
+    public var entersSSHPassword: Bool { kind == .ssh && sshAskpass == true && hasVaultItem && !isImported }
 
     /// The port the connection uses.
     public var effectivePort: Int {

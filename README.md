@@ -82,6 +82,12 @@ the context menu, or ⌘↩ in the search panel) does the same without connectin
   (and runs `bw lock`) after the time set in Settings (15 minutes without use by default), when the Mac sleeps,
   the screen locks, or Roundhouse quits.
 - The connection list stores only the item's ID and name.
+- **SSH: Enter the password into ssh** (off by default, per entry; Ghostty only). Roundhouse starts ssh with
+  `SSH_ASKPASS` set to its own executable and a one-time token (valid for two minutes). When ssh asks for the
+  password of the entry's host, that helper asks the running Roundhouse over a Unix socket that only you can open
+  and only Roundhouse's own executable may use; Roundhouse answers once and forgets it. No password on a command
+  line, on disk or on the clipboard. A jump host, a key passphrase, a 2FA code, a new host key or a second try are
+  asked in the terminal as usual. With Terminal or iTerm2 the password is copied instead.
 - **WinBox: Connect at once** (off by default, per entry). WinBox logs in immediately only when it gets the
   password on its command line, so with this option Roundhouse starts it with `<address> <user> <password>`.
   Other processes on your Mac can see command-line arguments in the process list while WinBox runs – turn it on
@@ -102,9 +108,10 @@ the context menu, or ⌘↩ in the search panel) does the same without connectin
   only the address, and WinBox opens its login window with its own saved login.
 - **Reachability is a TCP check** of the entry's port (22, 3389, 5900, 443, 8291…), not a ping. A host that answers
   ping but has the port closed shows red.
-- **Passwords are copied, not typed.** Except for WinBox with "Connect at once", Roundhouse never hands a password
-  to another app: paste it (⌘V) when the app asks. For SSH, keys are better (the Bitwarden desktop app has its own
-  SSH agent).
+- **Passwords are copied, not typed.** Except for WinBox with "Connect at once" and SSH with "Enter the password
+  into ssh", Roundhouse never hands a password
+  to another app: paste it (⌘V) when the app asks. For SSH, keys are still better (the Bitwarden desktop app has
+  its own SSH agent).
 
 ## Building
 
